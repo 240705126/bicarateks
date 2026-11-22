@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="id" data-theme="light" data-contrast="normal">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BicaraTeks</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F4F7FF;--surface:#fff;--soft:#EAF0FF;--text:#1B2A4A;--mute:#4D5F85;--line:#D3DDF3;--btn:#2A63F0;--btnText:#1D4FD0;--navy:#0B1F4B;--purple:#7C5CFF;--ok:#0E8A5F;--bad:#D93036;--focus:#7C5CFF}
+[data-theme=dark]{--bg:#0A1230;--surface:#121C45;--soft:#1A2658;--text:#EAF0FF;--mute:#AEBCE0;--line:#2B3B78;--btn:#3A6EF5;--btnText:#9DB8FF;--ok:#4FD6A0;--bad:#FF7A7F}
+[data-contrast=high][data-theme=light]{--bg:#fff;--surface:#fff;--soft:#fff;--text:#000;--mute:#111;--line:#000;--btn:#0030B8;--btnText:#0030B8;--ok:#006B3C;--bad:#B00020}
+[data-contrast=high][data-theme=dark]{--bg:#000;--surface:#000;--soft:#000;--text:#fff;--mute:#fff;--line:#fff;--btn:#FFE600;--btnText:#FFE600;--ok:#4DFFB0;--bad:#FF8A8A;--focus:#FFE600}
+[data-contrast=high][data-theme=dark] .btn-primary{color:#000}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);transition:background .3s,color .3s}
+.bg-app{background:var(--bg)}.bg-surface{background:var(--surface)}.bg-soft{background:var(--soft)}
+.t-main{color:var(--text)}.t-mute{color:var(--mute)}.t-accent{color:var(--btnText)}.t-ok{color:var(--ok)}.t-bad{color:var(--bad)}
+.bd{border:1.5px solid var(--line)}
+.card{background:var(--surface);border:1.5px solid var(--line);border-radius:1.5rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;border-radius:1rem;padding:.8rem 1.4rem;min-height:3.25rem;font-size:1.05rem;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .2s,opacity .2s;border:2px solid transparent}
+.btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 16px rgba(42,99,240,.25)}
+.btn:active:not(:disabled){transform:scale(.97)}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+.btn-primary{background:var(--btn);color:#fff}
+.btn-outline{background:transparent;border-color:var(--btn);color:var(--btnText)}
+.btn-danger{background:var(--bad);color:#fff}
+.btn-white{background:#fff;color:#0B1F4B}
+.btn-ghost-w{background:transparent;border-color:#fff;color:#fff}
+:focus-visible{outline:4px solid var(--focus);outline-offset:3px;border-radius:.6rem}
+.hero{background:linear-gradient(135deg,#0B1F4B 0%,#1B2E8F 55%,#4B2FC4 100%)}
+.fade{animation:fade .5s ease both}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.bar{width:7px;border-radius:6px;height:10px;background:var(--btn)}
+.wave.on .bar{animation:wave 1s ease-in-out infinite}
+.wave.on .bar:nth-child(3n){background:var(--purple)}
+@keyframes wave{0%,100%{height:8px}50%{height:44px}}
+.pulse{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(1.35)}}
+.float{animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.skip{position:absolute;left:-999px;top:8px;background:#fff;color:#000;padding:.6rem 1rem;border-radius:.6rem;z-index:99}
+.skip:focus{left:8px}
+.transcript{white-space:pre-wrap;word-break:break-word;line-height:1.5}
+</style>
+</head>
+<body>
+<a class="skip" href="#utama">Lewati ke konten utama</a>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const {useState,useEffect,useRef,useCallback} = React;
+
+/* ---------- util ---------- */
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+};
+const fmtDate = (t)=> new Date(t).toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const SR = typeof window!=='undefined' ? (window.SpeechRecognition||window.webkitSpeechRecognition) : null;
+const DEMO = [
+  "Selamat pagi, semuanya. Hari ini kita mulai rapat pukul sembilan.",
+  "Mohon siapkan laporan mingguan masing-masing.",
+  "Setelah itu, kita akan membahas jadwal kegiatan bakti sosial akhir pekan.",
+  "Jika ada pertanyaan, silakan sampaikan kapan saja. Kami siap membantu.",
+  "Terima kasih atas perhatian dan kerja samanya."
+];
+
+/* ---------- ikon ---------- */
+const P = {
+  mic:"M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0M12 16v4m-4 0h8",
+  stop:"M6 6h12v12H6z", pause:"M8 5v14M16 5v14", play:"M7 4l13 8-13 8z",
+  trash:"M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3",
+  copy:"M9 9h10v11H9zM5 15V4h10", down:"M12 4v12m-5-5 5 5 5-5M5 20h14",
+  plus:"M12 5v14M5 12h14", minus:"M5 12h14", sun:"M12 4V2m0 20v-2m8-8h2M2 12h2m13.7-5.7 1.4-1.4M4.9 19.1l1.4-1.4m0-11.4L4.9 4.9m14.2 14.2-1.4-1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z",
+  moon:"M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z", contrast:"M12 3a9 9 0 1 0 0 18V3z M12 3a9 9 0 0 1 0 18",
+  save:"M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6", menu:"M4 6h16M4 12h16M4 18h16", x:"M6 6l12 12M18 6 6 18",
+  open:"M3 7h6l2 2h10v10H3z", reset:"M4 4v6h6M4.5 15a8 8 0 1 0 2-8.5L4 10", check:"M5 12l5 5 9-10",
+  ear:"M7 9a5 5 0 0 1 10 0c0 3-3 3.5-3 6.5a2.5 2.5 0 0 1-5 0M5 3l2 2", clock:"M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z",
+  text:"M5 6h14M12 6v13M9 19h6", heart:"M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z", warn:"M12 3 2 20h20zM12 10v4m0 3v.01"
+};
+const Icon = ({n,s=22,className=""}) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true"><path d={P[n]}/></svg>
+);
+const Btn = ({v="primary",icon,children,className="",...p}) => (
+  <button className={`btn btn-${v} ${className}`} {...p}>{icon&&<Icon n={icon} s={20}/>}{children}</button>
+);
+
+/* ---------- navbar ---------- */
+const LINKS = [["beranda","Beranda"],["tentang","Tentang Kami"],["transkripsi","Fitur"],["panduan","Panduan"]];
+function Navbar({page,go}){
+  const [open,setOpen]=useState(false);
+  const item=(k,l,extra="")=>(
+    <a key={k} href={`#${k}`} onClick={()=>setOpen(false)} aria-current={page===k?"page":undefined}
+      className={`rounded-xl px-4 py-2 font-semibold t-main hover:bg-soft ${page===k?"bg-soft t-accent":""} ${extra}`}>{l}</a>);
+  return (
+    <header className="sticky top-0 z-40 bg-surface bd border-x-0 border-t-0" role="banner">
+      <nav aria-label="Navigasi utama" className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-8">
+        <a href="#beranda" className="flex items-center gap-2.5" aria-label="BicaraTeks, ke beranda">
+          <span className="grid h-10 w-10 place-items-center rounded-xl text-xl font-extrabold text-white" style={{background:"linear-gradient(135deg,#2A63F0,#7C5CFF)"}}>B</span>
+          <span className="text-2xl font-extrabold t-main tracking-tight">Bicara<span className="t-accent">Teks</span></span>
+        </a>
+        <div className="hidden items-center gap-1 md:flex">{LINKS.map(([k,l])=>item(k,l))}</div>
+        <div className="flex items-center gap-2">
+          <a href="#transkripsi" className="btn btn-primary hidden sm:inline-flex">Mulai Sekarang</a>
+          <button className="btn btn-outline md:hidden !px-3" aria-expanded={open} aria-label={open?"Tutup menu":"Buka menu"} onClick={()=>setOpen(!open)}><Icon n={open?"x":"menu"}/></button>
+        </div>
+      </nav>
+      {open && <div className="fade flex flex-col gap-1 px-4 pb-4 md:hidden">{LINKS.map(([k,l])=>item(k,l))}
+        <a href="#transkripsi" onClick={()=>setOpen(false)} className="btn btn-primary mt-2">Mulai Sekarang</a></div>}
+    </header>
+  );
+}
+
+/* ---------- beranda ---------- */
+function Home(){
+  const feats=[["mic","Transkripsi Suara Langsung","Ucapan berubah menjadi tulisan secara real-time lewat mikrofon perangkat."],
+    ["text","Teks Mudah Dibaca","Ukuran huruf, mode gelap/terang, dan kontras tinggi dapat diatur sesuai kebutuhan."],
+    ["clock","Riwayat Percakapan","Simpan hasil transkripsi, buka kembali kapan saja, dan hapus bila tidak diperlukan."],
+    ["ear","Ramah Disabilitas","Tombol besar, kontras jelas, navigasi keyboard, dan label yang dibaca pembaca layar."]];
+  return (<>
+    <section className="hero text-white">
+      <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-8 lg:grid-cols-2 lg:py-24">
+        <div className="fade">
+          <p className="mb-4 inline-block rounded-full bg-white/15 px-4 py-1.5 text-sm font-bold tracking-wide" style={{color:"#CFE0FF"}}>Aplikasi Pengubah Suara Menjadi Tulisan Secara Langsung</p>
+          <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl lg:text-6xl">Komunikasi Tanpa Batas, Semua Bisa Memahami.</h1>
+          <p className="mt-6 max-w-xl text-lg leading-relaxed" style={{color:"#DCE6FF"}}>BicaraTeks mengubah ucapan menjadi teks secara langsung agar teman Tuli dapat mengikuti percakapan sehari-hari dengan mudah, di mana saja.</p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <a href="#transkripsi" className="btn btn-white"><Icon n="mic" s={20}/>Mulai Transkripsi</a>
+            <a href="#transkripsi-demo" className="btn btn-ghost-w"><Icon n="play" s={20}/>Coba Demo</a>
+          </div>
+        </div>
+        <div className="float" aria-hidden="true">
+          <div className="rounded-[2rem] bg-white p-6 shadow-2xl sm:p-8" style={{color:"#1B2A4A"}}>
+            <div className="mb-4 flex items-center gap-2.5 font-bold"><span className="pulse h-3.5 w-3.5 rounded-full" style={{background:"#E5484D"}}/>Mendengarkan…</div>
+            <div className="wave on mb-5 flex h-12 items-center gap-1.5">{Array.from({length:18}).map((_,i)=><span key={i} className="bar" style={{animationDelay:`${i*.08}s`}}/>)}</div>
+            <div className="mb-3 rounded-2xl p-4" style={{background:"#F0F4FF"}}><p className="text-xs font-bold" style={{color:"#2A63F0"}}>Pembicara</p><p className="text-lg font-medium">Selamat pagi, hari ini kita mulai rapat pukul sembilan.</p></div>
+            <div className="rounded-2xl p-4" style={{background:"#EEE9FF"}}><p className="text-xs font-bold" style={{color:"#2A63F0"}}>Pembicara</p><p className="text-lg font-medium">Mohon siapkan laporan mingguan masing-masing.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section className="mx-auto max-w-7xl px-4 py-16 sm:px-8" aria-labelledby="keunggulan">
+      <h2 id="keunggulan" className="mb-10 text-center text-3xl font-extrabold t-main sm:text-4xl">Keunggulan BicaraTeks</h2>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {feats.map(([i,t,d],k)=>(
+          <article key={t} className="card fade p-7 transition hover:-translate-y-1 hover:shadow-xl" style={{animationDelay:`${k*.08}s`}}>
+            <span className="mb-4 grid h-14 w-14 place-items-center rounded-2xl text-white" style={{background:k%2?"#7C5CFF":"#2A63F0"}}><Icon n={i} s={26}/></span>
+            <h3 className="mb-2 text-xl font-bold t-main">{t}</h3><p className="t-mute leading-relaxed">{d}</p>
+          </article>))}
+      </div>
+    </section>
+    <section className="bg-surface bd border-x-0" aria-labelledby="tentang-ringkas">
+      <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-8">
+        <h2 id="tentang-ringkas" className="mb-5 text-3xl font-extrabold t-main sm:text-4xl">Tentang Kami</h2>
+        <p className="mb-4 text-2xl font-semibold leading-snug t-accent">“Setiap manusia berhak mendapatkan kesempatan yang sama untuk berkomunikasi, belajar, dan berpartisipasi dalam kehidupan sosial.”</p>
+        <p className="mb-8 text-lg leading-relaxed t-mute">BicaraTeks dibuat untuk mendukung komunikasi yang inklusif bagi penyandang disabilitas rungu atau Tuli, dengan semangat ta’awun (tolong-menolong), kepedulian, dan keadilan.</p>
+        <div className="flex flex-wrap justify-center gap-3"><a className="btn btn-primary" href="#tentang">Selengkapnya</a><a className="btn btn-outline" href="#panduan">Lihat Panduan</a></div>
+      </div>
+    </section>
+  </>);
+}
+
+/* ---------- tentang ---------- */
+function About(){
+  const blocks=[
+    ["Latar Belakang","Percakapan sehari-hari—di kelas, tempat kerja, layanan publik, hingga di rumah—sebagian besar berlangsung secara lisan. Bagi penyandang disabilitas rungu atau Tuli, hal ini sering menjadi hambatan untuk ikut memahami dan terlibat. BicaraTeks lahir sebagai proyek inovasi sosial digital untuk menjembatani hambatan tersebut."],
+    ["Permasalahan yang Diselesaikan","Keterbatasan akses terhadap informasi lisan yang disampaikan secara langsung, sehingga teman Tuli kerap tertinggal informasi, bergantung pada orang lain, atau tidak dapat berpartisipasi setara dalam percakapan."],
+    ["Tujuan dan Manfaat","Mengubah suara menjadi teks secara real-time (Speech-to-Text) berbahasa Indonesia; menyediakan teks yang mudah dibaca dan dapat diatur; menyimpan riwayat percakapan; serta dapat disalin atau diunduh sebagai berkas TXT."],
+    ["Sasaran Pengguna","Penyandang disabilitas rungu atau Tuli, orang dengan gangguan pendengaran, keluarga, guru, dosen, rekan kerja, petugas layanan publik, dan siapa pun yang ingin berkomunikasi lebih inklusif."],
+    ["Nilai Sosial dan Nilai Islam","Ta’awun (tolong-menolong dalam kebaikan), kepedulian terhadap sesama, keadilan dalam memberi akses, serta tidak mendiskriminasi sesama manusia. Setiap orang memiliki martabat yang sama dan berhak atas kemudahan dalam bermuamalah."]];
+  return (
+    <section className="mx-auto max-w-4xl px-4 py-14 sm:px-8 fade">
+      <h1 className="mb-3 text-4xl font-extrabold t-main">Tentang Kami</h1>
+      <blockquote className="mb-10 rounded-2xl bg-soft bd p-6 text-xl font-semibold t-accent" style={{borderLeft:"6px solid var(--purple)"}}>Setiap manusia berhak mendapatkan kesempatan yang sama untuk berkomunikasi, belajar, dan berpartisipasi dalam kehidupan sosial.</blockquote>
+      <div className="grid gap-5">{blocks.map(([t,d],i)=>(
+        <article key={t} className="card p-7"><h2 className="mb-2 flex items-center gap-3 text-2xl font-bold t-main"><span className="grid h-9 w-9 place-items-center rounded-full text-base text-white" style={{background:"var(--btn)"}}>{i+1}</span>{t}</h2><p className="text-lg leading-relaxed t-mute">{d}</p></article>))}</div>
+    </section>);
+}
+
+/* ---------- panduan ---------- */
+function Guide(){
+  const steps=["Buka halaman transkripsi.","Klik tombol Mulai Mendengarkan.","Izinkan akses mikrofon pada browser.","Mulai berbicara di sekitar perangkat.","Hasil percakapan akan muncul dalam bentuk tulisan.","Klik Berhenti jika sudah selesai.","Salin atau unduh hasil percakapan."];
+  return (
+    <section className="mx-auto max-w-3xl px-4 py-14 sm:px-8 fade">
+      <h1 className="mb-2 text-4xl font-extrabold t-main">Panduan Penggunaan</h1>
+      <p className="mb-8 text-lg t-mute">Ikuti langkah-langkah berikut untuk menggunakan BicaraTeks.</p>
+      <ol className="grid gap-4">{steps.map((s,i)=>(
+        <li key={s} className="card flex items-center gap-4 p-5"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-xl font-extrabold text-white" style={{background:"linear-gradient(135deg,#2A63F0,#7C5CFF)"}}>{i+1}</span><span className="text-lg font-semibold t-main">{s}</span></li>))}</ol>
+      <div className="card mt-8 p-6"><h2 className="mb-2 text-xl font-bold t-main">Tips</h2>
+        <ul className="list-disc space-y-1 pl-5 t-mute"><li>Gunakan browser Google Chrome atau Microsoft Edge agar pengenalan suara tersedia.</li><li>Dekatkan perangkat dengan pembicara dan kurangi kebisingan.</li><li>Tidak ada mikrofon? Gunakan tombol <b>Coba Demo</b> pada halaman transkripsi.</li></ul></div>
+      <div className="mt-8 flex flex-wrap gap-3"><a className="btn btn-primary" href="#transkripsi"><Icon n="mic" s={20}/>Mulai Transkripsi</a><a className="btn btn-outline" href="#transkripsi-demo">Coba Demo</a></div>
+    </section>);
+}
+
+/* ---------- transkripsi ---------- */
+function Transcribe({text,setText,settings,setSettings,autoDemo}){
+  const [interim,setInterim]=useState("");
+  const [status,setStatus]=useState("idle"); // idle | listening | paused | demo | demoPaused
+  const [notice,setNotice]=useState(null);   // {type,msg}
+  const [history,setHistory]=useState(()=>store.get("bt_history",[]));
+  const recRef=useRef(null), wantRef=useRef(false);
+  const demo=useRef({tokens:[],i:0,timer:null});
+  const boxRef=useRef(null);
+  const speed=settings.speed;
+  const dictRef=useRef(null), dlRef=useRef(null);
+  const [hasDict,setHasDict]=useState(false);
+  const supported=!!SR||hasDict;
+
+  useEffect(()=>{store.set("bt_history",history);},[history]);
+  useEffect(()=>{
+    let off=[],dead=false; const c=window.claude;
+    if(!c||!c.use) return;
+    c.use("downloads").then(d=>{ if(!dead) dlRef.current=d; }).catch(()=>{});
+    c.use("dictation").then(d=>{
+      if(dead||!d) return; dictRef.current=d; setHasDict(true);
+      off.push(d.onPartial(e=>setInterim(e.text||"")));
+      off.push(d.onFinal(e=>{ const t=(e.text||"").trim(); if(t) append(t); setInterim(""); }));
+      off.push(d.onState(e=>{ if(e.state!=="idle") return; setInterim("");
+        if(wantRef.current){ wantRef.current=false; setStatus("idle");
+          if(e.reason==="not_granted") flash("perm","Izin mikrofon belum diberikan. Buka menu Izin (Permissions) pada artifact ini, izinkan dikte, lalu klik Mulai Mendengarkan lagi.");
+          else if(e.reason==="unavailable") flash("warn","Pengenalan suara tidak tersedia untuk akun/bahasa ini. Gunakan Mode Demo di bawah.");
+          else if(e.reason==="rate_limited") flash("warn","Terlalu banyak sesi dikte. Coba lagi sebentar lagi.");
+          else if(e.reason==="upstream_error") flash("warn","Mikrofon atau layanan suara bermasalah. Coba lagi atau gunakan Mode Demo.");
+          else flash("info","Mendengarkan berhenti."); } }));
+    }).catch(()=>{});
+    return ()=>{ dead=true; off.forEach(f=>{try{f();}catch(e){}}); };
+  },[]);
+  useEffect(()=>{ if(boxRef.current) boxRef.current.scrollTop=boxRef.current.scrollHeight; },[text,interim]);
+
+  const flash=(type,msg)=>setNotice({type,msg});
+  const append=(s)=>setText(p=>(p&&!/[\s]$/.test(p)?p+" ":p)+s);
+
+  /* mikrofon */
+  const killRec=()=>{ wantRef.current=false; const dd=dictRef.current; if(dd&&dd.active()){ dd.stop().catch(()=>{}); } const r=recRef.current; recRef.current=null; if(r){ r.onend=null; r.onerror=null; r.onresult=null; try{r.abort();}catch(e){} } };
+  const startMic=()=>{
+    if(!supported){ flash("warn","Browser Anda belum mendukung pengenalan suara (Web Speech API). Gunakan Google Chrome atau Microsoft Edge, atau coba Mode Demo di bawah."); return; }
+    stopDemoTimer(); killRec(); setNotice(null);
+    if(dictRef.current){
+      wantRef.current=true; setStatus("listening");
+      dictRef.current.start({language:"id"}).catch(e=>{ wantRef.current=false; setStatus("idle"); setInterim("");
+        const c=e&&e.code;
+        if(c==="not_granted") flash("perm","Izin mikrofon belum diberikan. Buka menu Izin (Permissions) pada artifact ini dan izinkan dikte, lalu coba lagi.");
+        else if(c==="dismissed") flash("info","Permintaan izin ditutup. Klik Mulai Mendengarkan untuk mencoba lagi.");
+        else if(c!=="stopped") flash("warn","Tidak dapat memulai pengenalan suara ("+(c||"error")+"). Gunakan Mode Demo."); });
+      return;
+    }
+    const rec=new SR(); rec.lang="id-ID"; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
+    rec.onresult=(e)=>{ let fin="",tmp="";
+      for(let i=e.resultIndex;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) fin+=r[0].transcript; else tmp+=r[0].transcript; }
+      if(fin) append(fin.trim()); setInterim(tmp); };
+    rec.onerror=(e)=>{
+      if(e.error==="not-allowed"||e.error==="service-not-allowed"){ killRec(); setStatus("idle"); setInterim(""); flash("perm","Izin mikrofon belum diberikan. Klik ikon gembok/mikrofon di bilah alamat browser, pilih “Izinkan”, lalu klik Mulai Mendengarkan lagi."); }
+      else if(e.error==="audio-capture"){ killRec(); setStatus("idle"); flash("warn","Mikrofon tidak ditemukan. Periksa perangkat Anda atau gunakan Mode Demo."); }
+      else if(e.error==="network"){ killRec(); setStatus("idle"); flash("warn","Layanan pengenalan suara memerlukan koneksi internet. Periksa jaringan Anda atau gunakan Mode Demo."); }
+    };
+    rec.onend=()=>{ if(wantRef.current && recRef.current===rec){ try{rec.start();}catch(e){} } else if(recRef.current===rec){ setInterim(""); } };
+    recRef.current=rec; wantRef.current=true;
+    try{ rec.start(); setStatus("listening"); flash("info","Meminta izin mikrofon… silakan pilih “Izinkan” bila diminta browser."); }
+    catch(e){ flash("warn","Tidak dapat memulai mikrofon: "+e.message); setStatus("idle"); }
+  };
+  const pauseMic=()=>{ killRec(); setInterim(""); setStatus("paused"); flash("info","Dijeda. Klik Lanjutkan untuk melanjutkan."); };
+  const stopMic=()=>{ killRec(); setInterim(""); setStatus("idle"); flash("info","Transkripsi dihentikan."); };
+
+  /* demo */
+  const stopDemoTimer=()=>{ clearInterval(demo.current.timer); demo.current.timer=null; };
+  const delay=()=>[0,900,600,380,220,110][speed]||380;
+  const runDemo=()=>{
+    stopDemoTimer();
+    demo.current.timer=setInterval(()=>{
+      const d=demo.current;
+      if(d.i>=d.tokens.length){ stopDemoTimer(); setStatus("idle"); flash("ok","Demo selesai. Anda dapat menyimpan, menyalin, atau mengunduh hasilnya."); return; }
+      const tk=d.tokens[d.i++]; append(tk);
+      if(/[.!?]$/.test(tk)) setText(p=>p+"\n");
+    },delay());
+  };
+  const startDemo=()=>{
+    killRec(); setInterim(""); setNotice(null);
+    demo.current.tokens=DEMO.join(" ").split(" "); demo.current.i=0;
+    setText(""); setStatus("demo"); runDemo();
+  };
+  const pauseDemo=()=>{ stopDemoTimer(); setStatus("demoPaused"); };
+  const resumeDemo=()=>{ setStatus("demo"); runDemo(); };
+  const resetDemo=()=>{ stopDemoTimer(); demo.current.i=0; setText(""); setStatus("idle"); flash("info","Demo direset."); };
+  // ganti kecepatan saat demo berjalan
+  useEffect(()=>{ if(status==="demo") runDemo(); },[speed]);
+  useEffect(()=>{ if(autoDemo){ const t=setTimeout(startDemo,300); return()=>clearTimeout(t);} },[autoDemo]);
+  useEffect(()=>()=>{ killRec(); stopDemoTimer(); },[]);
+
+  /* aksi teks */
+  const clearText=()=>{ if(!text&&!interim) return; setText(""); setInterim(""); if(status==="demoPaused"){ stopDemoTimer(); setStatus("idle"); demo.current.i=0; } flash("info","Teks dihapus."); };
+  const copyText=async()=>{
+    const t=text.trim(); if(!t){ flash("warn","Belum ada teks untuk disalin."); return; }
+    try{ await navigator.clipboard.writeText(t); }
+    catch(e){ const ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); let ok=false; try{ok=document.execCommand("copy");}catch(_){} ta.remove(); if(!ok){ flash("warn","Gagal menyalin. Pilih teks lalu salin secara manual."); return; } }
+    flash("ok","Teks berhasil disalin ke clipboard.");
+  };
+  const downloadText=()=>{
+    const t=text.trim(); if(!t){ flash("warn","Belum ada teks untuk diunduh."); return; }
+    const d=new Date(), p=n=>String(n).padStart(2,"0");
+    const name=`bicarateks-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.txt`;
+    if(dlRef.current){ dlRef.current.save({filename:name,data:t+"\n"}).then(()=>flash("ok",`Berkas ${name} siap disimpan.`)).catch(e=>{ if(!e||e.code!=="dismissed") flash("warn","Gagal mengunduh berkas."); }); return; }
+    const blob=new Blob([t+"\n"],{type:"text/plain;charset=utf-8"}); const url=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+    flash("ok",`Berkas ${name} diunduh.`);
+  };
+  const saveHistory=()=>{
+    const t=text.trim(); if(!t){ flash("warn","Belum ada teks untuk disimpan."); return; }
+    const title=t.length>44?t.slice(0,44)+"…":t;
+    setHistory(h=>[{id:Date.now(),title,text:t,date:Date.now()},...h]); flash("ok","Transkripsi disimpan ke riwayat.");
+  };
+  const openItem=(it)=>{ killRec(); stopDemoTimer(); setInterim(""); setStatus("idle"); setText(it.text); flash("info","Riwayat dibuka."); window.scrollTo({top:0,behavior:"smooth"}); };
+  const delItem=(id)=>setHistory(h=>h.filter(x=>x.id!==id));
+  const delAll=()=>{ setHistory([]); flash("info","Seluruh riwayat dihapus."); };
+
+  const set=(k,v)=>setSettings(s=>({...s,[k]:v}));
+  const active=status==="listening"||status==="demo";
+  const sLabel={idle:["Mikrofon tidak aktif","var(--mute)"],listening:["Mikrofon aktif – mendengarkan","var(--ok)"],paused:["Dijeda","var(--btnText)"],demo:["Mode demo berjalan","var(--ok)"],demoPaused:["Demo dijeda","var(--btnText)"]}[status];
+  const nCls={info:"bg-soft t-main",ok:"t-ok bg-soft",warn:"t-bad bg-soft",perm:"t-bad bg-soft"};
+
+  return (
+    <section className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-8 lg:grid-cols-[1fr_380px] fade">
+      <div className="grid min-w-0 gap-6">
+        <div className="card p-5 sm:p-7">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <h1 className="text-3xl font-extrabold t-main">Transkripsi Suara</h1>
+            <div role="status" aria-live="polite" className="flex items-center gap-2.5 rounded-full bg-soft bd px-4 py-2 font-bold" style={{color:sLabel[1]}} data-testid="mic-status">
+              <span className={`h-3 w-3 rounded-full ${active?"pulse":""}`} style={{background:active?"var(--ok)":"var(--mute)"}}/>{sLabel[0]}
+            </div>
+          </div>
+          {!supported && <div role="alert" className="mb-4 flex gap-3 rounded-2xl bg-soft bd p-4 t-bad"><Icon n="warn" className="mt-0.5 shrink-0"/><p className="font-semibold">Browser ini belum mendukung SpeechRecognition. Gunakan Google Chrome atau Microsoft Edge untuk mikrofon; Mode Demo tetap dapat digunakan.</p></div>}
+          <div className="flex flex-wrap gap-3">
+            <Btn icon="mic" onClick={startMic} disabled={status==="listening"||status==="demo"} data-testid="btn-start">Mulai Mendengarkan</Btn>
+            <Btn v="outline" icon="pause" onClick={pauseMic} disabled={status!=="listening"} data-testid="btn-pause">Jeda</Btn>
+            <Btn v="outline" icon="play" onClick={startMic} disabled={status!=="paused"} data-testid="btn-resume">Lanjutkan</Btn>
+            <Btn v="danger" icon="stop" onClick={stopMic} disabled={status!=="listening"&&status!=="paused"} data-testid="btn-stop">Berhenti</Btn>
+          </div>
+          <div className={`wave ${active?"on":""} my-5 flex h-14 items-center justify-center gap-1.5 rounded-2xl bg-soft`} aria-hidden="true" data-testid="wave">
+            {Array.from({length:30}).map((_,i)=><span key={i} className="bar" style={{animationDelay:`${(i%10)*.09}s`}}/>)}
+          </div>
+          {notice && <div role="status" aria-live="polite" className={`fade mb-4 flex items-start justify-between gap-3 rounded-2xl bd p-4 font-semibold ${nCls[notice.type]}`} data-testid="notice"><span>{notice.msg}</span><button className="shrink-0 rounded-lg p-1" aria-label="Tutup pemberitahuan" onClick={()=>setNotice(null)}><Icon n="x" s={18}/></button></div>}
+          <div ref={boxRef} className="bg-app bd min-h-[260px] overflow-y-auto rounded-2xl p-5 sm:p-6" style={{maxHeight:"58vh"}} role="log" aria-live="polite" aria-label="Hasil transkripsi" data-testid="transcript">
+            {!text&&!interim ? <p className="t-mute" style={{fontSize:settings.font*0.7}}>Hasil percakapan akan muncul di sini. Klik <b>Mulai Mendengarkan</b> atau <b>Coba Demo</b>.</p>
+              : <p className="transcript t-main font-medium" style={{fontSize:settings.font}}><span data-testid="final-text">{text}</span>{interim&&<span className="t-mute italic" data-testid="interim-text"> {interim}</span>}</p>}
+          </div>
+          <p className="mt-2 text-sm t-mute">Teks final ditampilkan jelas; teks sementara (sedang dikenali) berwarna lebih pudar dan miring.</p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Btn v="outline" icon="copy" onClick={copyText} data-testid="btn-copy">Salin</Btn>
+            <Btn v="outline" icon="down" onClick={downloadText} data-testid="btn-download">Unduh TXT</Btn>
+            <Btn v="outline" icon="save" onClick={saveHistory} data-testid="btn-save">Simpan ke Riwayat</Btn>
+            <Btn v="outline" icon="trash" onClick={clearText} data-testid="btn-clear">Hapus Teks</Btn>
+          </div>
+        </div>
+
+        <div className="card p-5 sm:p-7" aria-labelledby="demo-h">
+          <h2 id="demo-h" className="mb-1 text-2xl font-bold t-main">Mode Demonstrasi</h2>
+          <p className="mb-4 t-mute">Simulasi percakapan yang muncul bertahap—berjalan tanpa mikrofon, cocok untuk presentasi.</p>
+          <div className="flex flex-wrap gap-3">
+            <Btn icon="play" onClick={startDemo} disabled={status==="demo"||status==="listening"} data-testid="btn-demo">Coba Demo</Btn>
+            <Btn v="outline" icon="pause" onClick={pauseDemo} disabled={status!=="demo"} data-testid="btn-demo-pause">Jeda Demo</Btn>
+            <Btn v="outline" icon="play" onClick={resumeDemo} disabled={status!=="demoPaused"} data-testid="btn-demo-resume">Lanjutkan Demo</Btn>
+            <Btn v="outline" icon="reset" onClick={resetDemo} disabled={status!=="demo"&&status!=="demoPaused"&&!text} data-testid="btn-demo-reset">Reset</Btn>
+          </div>
+        </div>
+      </div>
+
+      <aside className="grid content-start gap-6" aria-label="Pengaturan dan riwayat">
+        <div className="card p-5 sm:p-6">
+          <h2 className="mb-4 text-2xl font-bold t-main">Pengaturan Tampilan</h2>
+          <div className="grid gap-4">
+            <div><p className="mb-2 font-semibold t-main">Ukuran tulisan: <span data-testid="font-size">{settings.font}</span> px</p>
+              <div className="flex gap-3">
+                <Btn v="outline" icon="minus" className="flex-1" onClick={()=>set("font",Math.max(16,settings.font-4))} disabled={settings.font<=16} aria-label="Perkecil ukuran tulisan" data-testid="btn-font-down">A−</Btn>
+                <Btn v="outline" icon="plus" className="flex-1" onClick={()=>set("font",Math.min(72,settings.font+4))} disabled={settings.font>=72} aria-label="Perbesar ukuran tulisan" data-testid="btn-font-up">A+</Btn>
+              </div></div>
+            <div className="grid gap-3">
+              <Btn v="outline" icon={settings.theme==="dark"?"sun":"moon"} onClick={()=>set("theme",settings.theme==="dark"?"light":"dark")} data-testid="btn-theme">{settings.theme==="dark"?"Mode Terang":"Mode Gelap"}</Btn>
+              <Btn v={settings.contrast==="high"?"primary":"outline"} icon="contrast" aria-pressed={settings.contrast==="high"} onClick={()=>set("contrast",settings.contrast==="high"?"normal":"high")} data-testid="btn-contrast">Kontras Tinggi: {settings.contrast==="high"?"Aktif":"Mati"}</Btn>
+            </div>
+            <div><label htmlFor="speed" className="mb-2 block font-semibold t-main">Kecepatan tampilan teks (demo): <span data-testid="speed-label">{["","Sangat lambat","Lambat","Sedang","Cepat","Sangat cepat"][speed]}</span></label>
+              <input id="speed" type="range" min="1" max="5" value={speed} onChange={e=>set("speed",+e.target.value)} className="w-full" style={{accentColor:"var(--btn)",height:"2rem"}}/></div>
+          </div>
+        </div>
+        <div className="card p-5 sm:p-6">
+          <div className="mb-3 flex items-center justify-between gap-2"><h2 className="text-2xl font-bold t-main">Riwayat</h2>
+            {history.length>0&&<Btn v="outline" icon="trash" className="!min-h-0 !px-3 !py-2 !text-sm" onClick={delAll} data-testid="btn-history-clear">Hapus semua</Btn>}</div>
+          {history.length===0 ? <p className="t-mute">Belum ada riwayat. Klik <b>Simpan ke Riwayat</b> setelah transkripsi.</p> :
+            <ul className="grid gap-3" data-testid="history-list">{history.map(it=>(
+              <li key={it.id} className="rounded-2xl bg-soft bd p-4"><p className="font-bold t-main">{it.title}</p><p className="mb-3 text-sm t-mute">{fmtDate(it.date)}</p>
+                <div className="flex gap-2"><Btn v="outline" icon="open" className="!min-h-0 !flex-1 !px-3 !py-2 !text-sm" onClick={()=>openItem(it)} aria-label={`Buka riwayat ${it.title}`}>Buka</Btn>
+                  <Btn v="outline" icon="trash" className="!min-h-0 !px-3 !py-2 !text-sm" onClick={()=>delItem(it.id)} aria-label={`Hapus riwayat ${it.title}`}>Hapus</Btn></div></li>))}</ul>}
+        </div>
+      </aside>
+    </section>);
+}
+
+/* ---------- app ---------- */
+function useRoute(){
+  const parse=()=>{ const h=(location.hash||"#beranda").slice(1); const demo=h==="transkripsi-demo"; const p=demo?"transkripsi":h; return {page:["beranda","tentang","transkripsi","panduan"].includes(p)?p:"beranda",demo}; };
+  const [r,setR]=useState(parse);
+  useEffect(()=>{ const f=()=>{ setR(parse()); window.scrollTo(0,0); }; window.addEventListener("hashchange",f); return()=>window.removeEventListener("hashchange",f); },[]);
+  return r;
+}
+function App(){
+  const {page,demo}=useRoute();
+  const [text,setText]=useState("");
+  const [settings,setSettings]=useState(()=>({font:28,theme:(window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"),contrast:"normal",speed:3,...store.get("bt_settings",{})}));
+  useEffect(()=>{ document.documentElement.dataset.theme=settings.theme; document.documentElement.dataset.contrast=settings.contrast; store.set("bt_settings",settings); },[settings]);
+  const [demoKey,setDemoKey]=useState(0);
+  useEffect(()=>{ if(demo) setDemoKey(k=>k+1); },[demo,page]);
+  return (<>
+    <Navbar page={page}/>
+    <main id="utama" tabIndex="-1">
+      {page==="beranda"&&<Home/>}
+      {page==="tentang"&&<About/>}
+      {page==="panduan"&&<Guide/>}
+      {page==="transkripsi"&&<Transcribe text={text} setText={setText} settings={settings} setSettings={setSettings} autoDemo={demo?demoKey:0}/>}
+    </main>
+    <footer className="bg-surface bd mt-10 border-x-0 border-b-0 px-4 py-8 text-center sm:px-8">
+      <p className="font-bold t-main">BicaraTeks – Komunikasi Tanpa Batas</p>
+      <p className="mt-1 t-mute">Proyek inovasi sosial digital untuk komunikasi yang inklusif. Dibuat dengan semangat ta’awun.</p>
+    </footer>
+  </>);
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
