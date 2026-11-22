@@ -2,7 +2,7 @@
 <html lang="id" data-theme="light" data-contrast="normal">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>BicaraTeks</title>
 <meta name="color-scheme" content="light dark">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -62,9 +62,9 @@ header[role=banner]{top:env(safe-area-inset-top,0px)}
 img,svg,video{max-width:100%}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark}}
 [data-theme=dark]{color-scheme:dark}
+html{touch-action:manipulation}
 @media (max-width:640px){
- .btn{font-size:1rem;padding:.7rem 1rem}
- .flex-wrap>.btn{flex:1 1 100%}
+ html{font-size:14px}
  h1{word-break:break-word}
 }
 @media (max-width:380px){.text-2xl{font-size:1.35rem}}
